@@ -119,6 +119,30 @@ class ToDoApp:
 
     # ---------------- TODO VIEW ----------------
     def load_todo_view(self):
+        try:
+            headers = {"Authorization": f"Bearer {self.token}"}
+            resp = httpx.get(f"{API_URL}/users/me", headers=headers)
+            if resp.status_code == 200:
+                username = resp.json().get("username", "Usuário")
+            else:
+                username = "Usuário"
+        except Exception as ex:
+            print(f"Erro ao buscar usuário: {ex}")
+            username = "Usuário"
+
+        user_name_text = ft.Text(
+            value=f"Tarefas de, {username}!",
+            weight=ft.FontWeight.BOLD,
+            size=18
+        )
+
+        logout_btn = ft.IconButton(
+            icon=ft.Icons.LOGOUT,
+            icon_color=ft.Colors.RED,
+            tooltip="Sair",
+            on_click=self.logout
+        )
+
         self.task_input = ft.TextField(hint_text="Nova tarefa", expand=True)
         add_btn = ft.FloatingActionButton(icon=ft.Icons.ADD, on_click=self.add_task)
         self.tasks_container = ft.Column()
@@ -127,6 +151,7 @@ class ToDoApp:
         self.page.add(
             ft.Column(
                 controls=[
+                    ft.Row([user_name_text, logout_btn], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     ft.Row([self.task_input, add_btn], spacing=10),
                     self.tasks_container
                 ],
@@ -194,7 +219,11 @@ class ToDoApp:
                 self.refresh_tasks()
         except Exception as ex:
             print(f"Erro ao atualizar task: {ex}")
-
+    
+    def logout(self, e):
+        self.token = None
+        self.tasks = []
+        self.login_view()
 
 def main(page: ft.Page):
     ToDoApp(page)
