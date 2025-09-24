@@ -189,10 +189,25 @@ class ToDoApp:
             if response.status_code == 200:
                 self.tasks = response.json()
                 self.update_tasks_ui()
+
+                # Atualiza contagem das abas
+                all_resp = httpx.get(f"{API_URL}/tasks/", headers=headers)
+                incomplete_resp = httpx.get(f"{API_URL}/tasks/", headers=headers, params={"status": "incomplete"})
+                complete_resp = httpx.get(f"{API_URL}/tasks/", headers=headers, params={"status": "complete"})
+
+                if all_resp.status_code == 200:
+                    self.tabs.tabs[0].text = f"Todos ({len(all_resp.json())})"
+                if incomplete_resp.status_code == 200:
+                    self.tabs.tabs[1].text = f"Em andamento ({len(incomplete_resp.json())})"
+                if complete_resp.status_code == 200:
+                    self.tabs.tabs[2].text = f"Finalizados ({len(complete_resp.json())})"
+
+                self.page.update()
+
         except Exception as ex:
             self.tasks_container.controls.clear()
             self.tasks_container.controls.append(ft.Text(f"Erro ao buscar tasks: {ex}", color=ft.Colors.RED))
-            self.page.update() 
+            self.page.update()
 
     def update_tasks_ui(self):
         self.tasks_container.controls.clear()
