@@ -147,12 +147,24 @@ class ToDoApp:
         add_btn = ft.FloatingActionButton(icon=ft.Icons.ADD, on_click=self.add_task)
         self.tasks_container = ft.Column()
 
+        self.tabs = ft.Tabs(
+            selected_index=0,
+            on_change=self.tabs_changed,
+            tabs=[
+                ft.Tab(text="Todas"),
+                ft.Tab(text="Em andamento"),
+                ft.Tab(text="Finalizadas"),
+            ],
+            expand=1
+        )
+
         self.page.controls.clear()
         self.page.add(
             ft.Column(
                 controls=[
                     ft.Row([user_name_text, logout_btn], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     ft.Row([self.task_input, add_btn], spacing=10),
+                    self.tabs,
                     self.tasks_container
                 ],
                 expand=True
@@ -160,17 +172,27 @@ class ToDoApp:
         )
         self.refresh_tasks()
 
-    def refresh_tasks(self):
+    def tabs_changed(self, e):
+        tab = e.control.tabs[e.control.selected_index].text
+        if tab == "Todas":
+            self.refresh_tasks()
+        elif tab == "Em andamento":
+            self.refresh_tasks(status="incomplete")
+        elif tab == "Finalizadas":
+            self.refresh_tasks(status="complete")
+
+    def refresh_tasks(self, status=None):
         try:
             headers = {"Authorization": f"Bearer {self.token}"}
-            response = httpx.get(f"{API_URL}/tasks/", headers=headers)
+            params = {"status": status} if status else {}
+            response = httpx.get(f"{API_URL}/tasks/", headers=headers, params=params)
             if response.status_code == 200:
                 self.tasks = response.json()
                 self.update_tasks_ui()
         except Exception as ex:
             self.tasks_container.controls.clear()
             self.tasks_container.controls.append(ft.Text(f"Erro ao buscar tasks: {ex}", color=ft.Colors.RED))
-            self.page.update()
+            self.page.update() 
 
     def update_tasks_ui(self):
         self.tasks_container.controls.clear()
