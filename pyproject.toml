@@ -8,6 +8,9 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "fastapi (>=0.117.1,<0.118.0)",
+    "sqlalchemy (>=2.0.43,<3.0.0)",
+    "uvicorn (>=0.37.0,<0.38.0)"
 ]
 
 [tool.poetry]
