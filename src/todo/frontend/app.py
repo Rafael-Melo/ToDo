@@ -173,12 +173,12 @@ class ToDoApp:
         self.refresh_tasks()
 
     def tabs_changed(self, e):
-        tab = e.control.tabs[e.control.selected_index].text
-        if tab == "Todas":
+        index = e.control.selected_index
+        if index == 0:
             self.refresh_tasks()
-        elif tab == "Em andamento":
+        elif index == 1:
             self.refresh_tasks(status="incomplete")
-        elif tab == "Finalizadas":
+        elif index == 2:
             self.refresh_tasks(status="complete")
 
     def refresh_tasks(self, status=None):
