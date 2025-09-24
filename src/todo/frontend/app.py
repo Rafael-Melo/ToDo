@@ -8,19 +8,19 @@ class ToDoApp:
         self.page = page
         self.page.title = "ToDo App"
         self.page.scroll = ft.ScrollMode.ALWAYS
-        self.token = None  # JWT token
+        self.token = None
         self.tasks = []
 
         self.login_view()
 
-    # ---------------- LOGIN / SIGNUP ----------------
+    # ---------------- LOGIN ----------------
     def login_view(self):
         self.username = ft.TextField(label="Username", expand=True)
         self.password = ft.TextField(label="Password", password=True, can_reveal_password=True, expand=True)
         self.message = ft.Text("", color=ft.Colors.RED)
 
         login_btn = ft.ElevatedButton("Login", on_click=self.login)
-        signup_btn = ft.ElevatedButton("Criar Conta", on_click=self.signup)
+        signup_btn = ft.ElevatedButton("Criar Conta", on_click=self.signup_popup)
 
         self.page.controls.clear()
         self.page.add(
@@ -38,11 +38,62 @@ class ToDoApp:
         )
         self.page.update()
 
-    async def api_post(self, endpoint, data):
-        async with httpx.AsyncClient() as client:
-            response = await client.post(f"{API_URL}{endpoint}", json=data) if endpoint.endswith("/signup") else await client.post(f"{API_URL}{endpoint}", data=data)
-            return response
+    # ---------------- SIGNUP POPUP ----------------
+    def signup_popup(self, e):
+        print('Botão clicado!')
+        self.signup_username = ft.TextField(label="Novo usuário")
+        self.signup_password = ft.TextField(label="Senha", password=True, can_reveal_password=True)
+        self.signup_message = ft.Text("", color=ft.Colors.RED)
 
+        create_btn = ft.ElevatedButton("Criar", on_click=self.create_account)
+        cancel_btn = ft.TextButton("Cancelar", on_click=lambda e: self.close_signup())
+
+        self.signup_dialog = ft.AlertDialog(
+            title=ft.Text("Criar Conta"),
+            content=ft.Column([self.signup_username, self.signup_password, self.signup_message]),
+            actions=[create_btn, cancel_btn]
+        )
+
+        self.page.dialog = self.signup_dialog
+        self.signup_username.value = ""
+        self.signup_password.value = ""
+        self.signup_message.value = ""
+        self.page.open(self.signup_dialog)
+
+    def create_account(self, e):
+        username = self.signup_username.value.strip()
+        password = self.signup_password.value.strip()
+        if not username or not password:
+            self.signup_message.value = "Preencha todos os campos!"
+            self.page.update()
+            return
+
+        try:
+            response = httpx.post(f"{API_URL}/auth/signup", json={"username": username, "password": password})
+            if response.status_code == 200:
+                # login automático
+                token_resp = httpx.post(
+                    f"{API_URL}/auth/login",
+                    data={"username": username, "password": password},
+                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                )
+                if token_resp.status_code == 200:
+                    self.token = token_resp.json()["access_token"]
+                    self.close_signup()
+                    self.load_todo_view()
+                else:
+                    self.signup_message.value = "Erro ao logar automaticamente"
+            else:
+                self.signup_message.value = f"Erro: {response.json().get('detail')}"
+        except Exception as ex:
+            self.signup_message.value = f"Erro de conexão: {ex}"
+        self.page.update()
+
+    def close_signup(self):
+        self.page.dialog.open = False
+        self.page.update()
+
+    # ---------------- LOGIN ACTION ----------------
     def login(self, e):
         username = self.username.value.strip()
         password = self.password.value.strip()
@@ -52,38 +103,22 @@ class ToDoApp:
             return
 
         try:
-            response = httpx.post(f"{API_URL}/auth/login", data={"username": username, "password": password})
+            response = httpx.post(
+                f"{API_URL}/auth/login",
+                data={"username": username, "password": password},
+                headers={"Content-Type": "application/x-www-form-urlencoded"}
+            )
             if response.status_code == 200:
                 self.token = response.json()["access_token"]
-                self.todo_view()
+                self.load_todo_view()
             else:
                 self.message.value = "Usuário ou senha incorretos."
-                self.page.update()
         except Exception as ex:
             self.message.value = f"Erro de conexão: {ex}"
-            self.page.update()
-
-    def signup(self, e):
-        username = self.username.value.strip()
-        password = self.password.value.strip()
-        if not username or not password:
-            self.message.value = "Preencha todos os campos!"
-            self.page.update()
-            return
-
-        try:
-            response = httpx.post(f"{API_URL}/auth/signup", json={"username": username, "password": password})
-            if response.status_code == 200:
-                self.message.value = "Conta criada! Faça login."
-            else:
-                self.message.value = f"Erro: {response.json().get('detail')}"
-            self.page.update()
-        except Exception as ex:
-            self.message.value = f"Erro de conexão: {ex}"
-            self.page.update()
+        self.page.update()
 
     # ---------------- TODO VIEW ----------------
-    def todo_view(self):
+    def load_todo_view(self):
         self.task_input = ft.TextField(hint_text="Nova tarefa", expand=True)
         add_btn = ft.FloatingActionButton(icon=ft.Icons.ADD, on_click=self.add_task)
         self.tasks_container = ft.Column()
@@ -114,8 +149,6 @@ class ToDoApp:
 
     def update_tasks_ui(self):
         self.tasks_container.controls.clear()
-        headers = {"Authorization": f"Bearer {self.token}"}
-
         for t in self.tasks:
             cb = ft.Checkbox(
                 label=t["name"],
@@ -128,7 +161,6 @@ class ToDoApp:
                 on_click=lambda e, task_id=t["id"]: self.delete_task(task_id)
             )
             self.tasks_container.controls.append(ft.Row([cb, del_btn], alignment=ft.MainAxisAlignment.SPACE_BETWEEN))
-
         self.page.update()
 
     def add_task(self, e):
@@ -168,4 +200,3 @@ def main(page: ft.Page):
     ToDoApp(page)
 
 ft.app(target=main, view=ft.WEB_BROWSER)
-
