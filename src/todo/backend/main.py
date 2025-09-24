@@ -5,9 +5,11 @@ from . import models, schemas
 from .database import SessionLocal, engine
 from .auth import router as auth_router, get_current_user
 
-models.Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="ToDo API")
+
+app.include_router(auth_router)
+
+models.Base.metadata.create_all(bind=engine)
 
 # Dependência de sessão DB
 def get_db():
@@ -55,5 +57,11 @@ def delete_task(task_id: int, db: Session = Depends(get_db), current_user: model
     db.delete(task)
     db.commit()
     return {"detail": "Task deleted successfully"}
+
+# --- USER ROUTES ---
+@app.get("/users/me", response_model=schemas.User)
+def read_users_me(current_user: models.User = Depends(get_current_user)):
+    return current_user
+
 
 # poetry run uvicorn src.todo.backend.main:app --reload
