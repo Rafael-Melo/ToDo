@@ -40,7 +40,6 @@ class ToDoApp:
 
     # ---------------- SIGNUP POPUP ----------------
     def signup_popup(self, e):
-        print('Botão clicado!')
         self.signup_username = ft.TextField(label="Novo usuário")
         self.signup_password = ft.TextField(label="Senha", password=True, can_reveal_password=True)
         self.signup_message = ft.Text("", color=ft.Colors.RED)
@@ -211,19 +210,66 @@ class ToDoApp:
 
     def update_tasks_ui(self):
         self.tasks_container.controls.clear()
+
         for t in self.tasks:
+            # campo de texto da tarefa
+            task_field = ft.TextField(
+                value=t["name"],
+                expand=True,
+                border=ft.InputBorder.NONE,
+                read_only=True
+            )
+
+            # checkbox de status
             cb = ft.Checkbox(
-                label=t["name"],
                 value=t["status"] == "complete",
                 on_change=lambda e, task=t: self.toggle_status(e, task)
             )
+
+            # botão editar
+            def toggle_edit(e, task=t, field=task_field):
+                if field.read_only:
+                    field.read_only = False
+                    field.border = ft.InputBorder.OUTLINE
+                    e.control.icon = ft.Icons.SAVE
+                else:
+                    field.read_only = True
+                    field.border = ft.InputBorder.NONE
+                    e.control.icon = ft.Icons.EDIT
+                    self.edit_task(task["id"], field.value)
+                self.page.update()
+
+            edit_btn = ft.IconButton(
+                icon=ft.Icons.EDIT,
+                tooltip="Editar",
+                on_click=toggle_edit
+            )
+
             del_btn = ft.IconButton(
                 icon=ft.Icons.DELETE,
                 icon_color=ft.Colors.RED,
+                tooltip="Excluir",
                 on_click=lambda e, task_id=t["id"]: self.delete_task(task_id)
             )
-            self.tasks_container.controls.append(ft.Row([cb, del_btn], alignment=ft.MainAxisAlignment.SPACE_BETWEEN))
+
+            self.tasks_container.controls.append(
+                ft.Row([cb, task_field, edit_btn, del_btn], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+            )
+
         self.page.update()
+
+    def edit_task(self, task_id, new_name):
+        try:
+            headers = {"Authorization": f"Bearer {self.token}"}
+            response = httpx.put(
+                f"{API_URL}/tasks/{task_id}",
+                json={"name": new_name},
+                headers=headers
+            )
+            if response.status_code == 200:
+                self.refresh_tasks()
+        except Exception as ex:
+            print(f"Erro ao editar task: {ex}")
 
     def add_task(self, e):
         name = self.task_input.value.strip()
