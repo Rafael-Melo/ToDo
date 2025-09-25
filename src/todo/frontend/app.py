@@ -7,6 +7,8 @@ class ToDoApp:
     def __init__(self, page: ft.Page):
         self.page = page
         self.page.title = "ToDo App"
+        self.page.theme_mode = ft.ThemeMode.DARK
+        self.page.theme = ft.Theme(color_scheme_seed=ft.Colors.INDIGO)
         self.page.scroll = ft.ScrollMode.ALWAYS
         self.token = None
         self.tasks = []
@@ -15,17 +17,42 @@ class ToDoApp:
 
     # ---------------- LOGIN ----------------
     def login_view(self):
+        self.logo = ft.Image(src="https://cdn-icons-png.flaticon.com/256/7590/7590241.png", width=250, height=250)
         self.username = ft.TextField(label="Username", expand=True)
         self.password = ft.TextField(label="Password", password=True, can_reveal_password=True, expand=True)
         self.message = ft.Text("", color=ft.Colors.RED)
 
-        login_btn = ft.ElevatedButton("Login", on_click=self.login)
-        signup_btn = ft.ElevatedButton("Criar Conta", on_click=self.signup_popup)
+        login_btn = ft.ElevatedButton(
+            content=ft.Container(
+                content=ft.Row(
+                    controls=[
+                        ft.Icon(ft.Icons.LOGIN),
+                        ft.Text(value="Login", weight=ft.FontWeight.BOLD), 
+                    ]
+                ),
+                margin=10,
+            ),
+            on_click=self.login  
+        )
+
+        signup_btn = ft.ElevatedButton(
+            content=ft.Container(
+                content=ft.Row(
+                    controls=[
+                        ft.Icon(ft.Icons.PERSON),
+                        ft.Text(value="Criar Conta", weight=ft.FontWeight.BOLD),
+                    ]
+                ),
+                margin=10,
+            ),
+            on_click=self.signup_popup
+        )
 
         self.page.controls.clear()
         self.page.add(
             ft.Column(
                 controls=[
+                    self.logo,
                     self.username,
                     self.password,
                     ft.Row([login_btn, signup_btn], alignment=ft.MainAxisAlignment.SPACE_EVENLY),
@@ -143,7 +170,7 @@ class ToDoApp:
         )
 
         self.task_input = ft.TextField(hint_text="Nova tarefa", expand=True)
-        add_btn = ft.FloatingActionButton(icon=ft.Icons.ADD, on_click=self.add_task)
+        add_btn = ft.FloatingActionButton(icon=ft.Icons.ADD, bgcolor=ft.Colors.GREEN, on_click=self.add_task)
         self.tasks_container = ft.Column()
 
         self.tabs = ft.Tabs(
@@ -241,6 +268,7 @@ class ToDoApp:
 
             edit_btn = ft.IconButton(
                 icon=ft.Icons.EDIT,
+                icon_color=ft.Colors.BLUE,
                 tooltip="Editar",
                 on_click=toggle_edit
             )
@@ -253,7 +281,15 @@ class ToDoApp:
             )
 
             self.tasks_container.controls.append(
-                ft.Row([cb, task_field, edit_btn, del_btn], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+                ft.Card(
+                    content=ft.Row(
+                        [cb, task_field, edit_btn, del_btn],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    ),
+                    elevation=2,
+                    margin=5,
+                )
+                
             )
 
         self.page.update()
@@ -311,4 +347,4 @@ class ToDoApp:
 def main(page: ft.Page):
     ToDoApp(page)
 
-ft.app(target=main, view=ft.WEB_BROWSER)
+ft.app(target=main, assets_dir='assets', view=ft.WEB_BROWSER)
