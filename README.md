@@ -50,6 +50,9 @@ The ToDo App allows users to sign up, log in, and manage their tasks with inline
 ---
 
 # 📂 Project Structure
+
+```bash
+
 ToDo/
  └─ src/
      └─ todo/
@@ -57,6 +60,7 @@ ToDo/
          │   └─ app.py
          └─ backend/       # Backend code (FastAPI)
              └─ main.py
+```
 
 ---
 
